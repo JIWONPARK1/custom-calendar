@@ -1,4 +1,4 @@
-import React, { Component, ReactElement } from "react";
+import React, { Component, ReactElement, ReactNode } from "react";
 import {
   FlatList,
   ScrollView,
@@ -9,6 +9,8 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   SafeAreaView,
+  Image,
+  Dimensions,
 } from "react-native";
 
 interface CalendarState {
@@ -26,11 +28,12 @@ interface CalendarProps {
 
   //children
 
-  renderIndividualHeader?: () => ReactElement;
-  renderIndividualFooter?: () => ReactElement;
+  EventDatas?: { date: number; children: ReactNode }[];
+  childrenDatas?: { date: number; children: ReactNode }[];
 
   //event
   onSelectDate?: (date: number) => void;
+  onChangeMonth?: (date: Date) => void;
 }
 
 export default class Calendar extends Component<CalendarProps, CalendarState> {
@@ -38,7 +41,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
   styles = StyleSheet.create({
     wrapperContainer: {
-      width: 330,
+      width: "100%",
     },
 
     monthContainer: {
@@ -53,10 +56,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
       fontSize: 18,
       fontWeight: "600",
     },
-    sundayText: { color: "#666666" },
     defaultWeekView: {
-      width: 47,
-      height: 47,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -75,7 +75,6 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     selectedDate: {
       borderWidth: 1,
       borderColor: "#b59073",
-      padding: 5,
     },
     selectedDateText: {
       color: "#b59073",
@@ -90,11 +89,13 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     this.state = {
       date: new Date(),
       SelectedDate: new Date(),
-      layoutWidth: 330,
+      layoutWidth: 0,
       currentMonth: new Date(),
     };
     this.scrollRef = React.createRef();
   }
+
+  componentDidMount = () => {};
 
   private handleSelectedDate = ({ date }: any) => {
     const { onSelectDate } = this.props;
@@ -110,6 +111,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
   private handleSwipe = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { layoutWidth, currentMonth } = this.state;
+    const { onChangeMonth } = this.props;
 
     const valueX = Math.floor(e.nativeEvent.contentOffset.x);
     const maxLayoutWidth = Math.floor(layoutWidth) * 2;
@@ -133,6 +135,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
         },
         () => {
           this.scrollToMiddle();
+          onChangeMonth && onChangeMonth(prevMonth);
         }
       );
     } else if (valueX === maxLayoutWidth) {
@@ -142,6 +145,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
         },
         () => {
           this.scrollToMiddle();
+          onChangeMonth && onChangeMonth(nextMonth);
         }
       );
     }
@@ -180,7 +184,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
               <Text
                 style={[
                   styles && styles.weekText,
-                  index === 0 && this.styles.sundayText,
+                  index === 0 && styles.sundayText,
                 ]}
               >
                 {item}
@@ -208,7 +212,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     const prevDates = [];
 
     for (let idx = 0; idx < firstWeekday; idx++) {
-      const date = new Date(currentYear, currentMonth, 0);
+      const date = new Date(currentYear, currentMonth - 1, 0);
       date.setDate(date.getDate() - idx);
       calendarDates.unshift({ date, isDisabled: true });
     }
@@ -223,9 +227,9 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
     //get next month dates
 
-    for (let idx = 0; idx < 7 - lastWeekday; idx++) {
+    for (let idx = 1; idx <= 6 - lastWeekday; idx++) {
       calendarDates.push({
-        date: new Date(currentYear, currentMonth, idx + 1),
+        date: new Date(currentYear, currentMonth + 1, idx),
         isDisabled: true,
       });
     }
@@ -245,11 +249,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
   private renderDate = ({ item }: any) => {
     const { SelectedDate } = this.state;
-    const {
-      styles,
-      renderIndividualHeader,
-      renderIndividualFooter,
-    } = this.props;
+    const { styles, childrenDatas, EventDatas } = this.props;
 
     const isSelected =
       SelectedDate.getDate() === item.date.getDate() &&
@@ -258,7 +258,8 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
     const isToday =
       new Date().getDate() === item.date.getDate() &&
-      new Date().getMonth() === item.date.getMonth();
+      new Date().getMonth() - 1 === item.date.getMonth();
+    const isSunday = item.date.getDay() === 0;
 
     return (
       <TouchableOpacity
@@ -267,23 +268,42 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
         style={[
           this.styles.defaultDateView,
           styles && styles.dateView,
-          isSelected && this.styles.selectedDate,
+          isSelected && [
+            this.styles.selectedDate,
+            styles && styles.dateSelected,
+          ],
         ]}
         onPress={() => this.handleSelectedDate(item)}
       >
-        {renderIndividualHeader && renderIndividualHeader()}
         <Text
           style={[
             this.styles.defaultDateText,
+            styles.dateText,
             item.isDisabled && this.styles.dateDisabled,
-            isSelected && this.styles.selectedDateText,
-            isToday && this.styles.dateToday,
+            isSelected &&
+              this.styles.selectedDateText &&
+              styles &&
+              styles.dateSelected,
+            ,
+            isToday && [this.styles.dateToday, styles.dateToday],
+            isSunday && styles.dateSunday,
           ]}
         >
           {item.date.getDate()}
         </Text>
-        {renderIndividualFooter && renderIndividualFooter()}
-        {/* {item.date === new Date().getDate() && <Dot />} */}
+        {childrenDatas &&
+          childrenDatas.map(({ date, children }) => {
+            if (date == item.date.getDate()) {
+              return children;
+            }
+          })}
+        {EventDatas &&
+          !item.isDisabled &&
+          EventDatas.map(({ date, children }) => {
+            if (date == item.date.getDate()) {
+              return children;
+            }
+          })}
       </TouchableOpacity>
     );
   };
@@ -319,7 +339,9 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     const { styles } = this.props;
 
     const displayYear = currentMonth.getFullYear();
-    const displayMonth = currentMonth.getMonth() + 1;
+    const displayMonth = currentMonth.toLocaleString("default", {
+      month: "long",
+    });
 
     return (
       <SafeAreaView

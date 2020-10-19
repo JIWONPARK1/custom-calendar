@@ -1,20 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import Calendar from "./component/Calendar/Calendar";
+import CalendarScreen from "./screens/CalendarScreen";
 
 export default function App() {
   return (
     <>
-      <Calendar />
+      <CalendarScreen />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
