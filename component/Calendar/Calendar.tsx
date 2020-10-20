@@ -1,14 +1,14 @@
-import React, { Component, ReactNode } from "react";
+import React, { ReactNode, PropsWithChildren, useState, useRef } from "react";
 import {
-  FlatList,
-  ScrollView,
-  Text,
   View,
+  Text,
   StyleSheet,
-  TouchableOpacity,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   SafeAreaView,
+  ScrollView,
+  FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  TouchableOpacity,
 } from "react-native";
 
 const defaultStyles = StyleSheet.create({
@@ -53,118 +53,100 @@ const defaultStyles = StyleSheet.create({
   },
 });
 
-interface CalendarState {
-  selectedDate: Date;
-  layoutWidth: number;
-
-  currentMonth: Date;
-
-  date: Date;
-}
-
 interface CalendarProps {
   //style
   styles?: any;
+  date?: Date;
 
   //children
-
-  EventDatas?: { date: number; children: ReactNode }[];
-  childrenDatas?: { date: number; children: ReactNode }[];
+  renderSelected: ReactNode;
+  EventDatas?: { date: Date; children: ReactNode }[];
+  childrenDatas?: { date: Date; children: ReactNode }[];
 
   //event
-  selectedDate?: Date;
   onSelectDate?: (date: number) => void;
-  onChangeMonth?: (date: Date) => void;
+  onChangedDate?: (date: Date) => void;
 }
 
-export default class Calendar extends Component<CalendarProps, CalendarState> {
-  scrollRef: any;
+export default function Calendar({
+  date = new Date(),
+  styles,
+  EventDatas,
+  childrenDatas,
+  onSelectDate,
+  onChangedDate,
+  renderSelected,
+}: PropsWithChildren<CalendarProps>) {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [layoutWidth, serLayoutWidth] = useState<number>(0);
+  const [currentMonth, setCurrentMonth] = useState<Date>(date);
+  const scrollRef = useRef<ScrollView>(null);
+  const prevMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() - 1,
+    currentMonth.getDate()
+  );
+  const nextMonth = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth() + 1,
+    currentMonth.getDate()
+  );
 
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      date: new Date(),
-      selectedDate: new Date(),
-      layoutWidth: 0,
-      currentMonth: new Date(),
-    };
-    this.scrollRef = React.createRef();
+  const displayYear = currentMonth.getFullYear();
+  const displayMonth = currentMonth.toLocaleString("default", {
+    month: "long",
+  });
+
+  {
+    /* scrollView 가운데 정렬 함수 */
   }
 
-  componentDidMount = () => {
-    const { selectedDate } = this.props;
-    if (selectedDate) {
-      this.setState({
-        selectedDate,
-      });
-    }
-  };
-
-  private handleSelectedDate = ({ date }: any) => {
-    const { onSelectDate } = this.props;
-    this.setState(
-      {
-        selectedDate: date,
-      },
-      () => {
-        onSelectDate && onSelectDate(date);
-      }
-    );
-  };
-
-  private handleSwipe = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutWidth, currentMonth } = this.state;
-    const { onChangeMonth } = this.props;
-
-    if (!layoutWidth || layoutWidth === 1) return;
-
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const date = currentMonth.getDate();
-
-    const valueX = Math.floor(e.nativeEvent.contentOffset.x);
-    const maxLayoutWidth = Math.floor(layoutWidth) * 2;
-
-    const prevMonth = new Date(year, month - 1, date);
-    const nextMonth = new Date(year, month + 1, date);
-
-    if (valueX === 0) {
-      this.setState(
-        {
-          currentMonth: prevMonth,
-        },
-        () => {
-          this.scrollToMiddle();
-          onChangeMonth && onChangeMonth(prevMonth);
-        }
-      );
-    } else if (valueX === maxLayoutWidth) {
-      this.setState(
-        {
-          currentMonth: nextMonth,
-        },
-        () => {
-          this.scrollToMiddle();
-          onChangeMonth && onChangeMonth(nextMonth);
-        }
-      );
-    }
-  };
-
-  private scrollToMiddle = () => {
-    const { layoutWidth } = this.state;
-    if (this.scrollRef.current) {
-      this.scrollRef.current.scrollTo({
-        duration: 500,
+  const scrollToMiddle = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
         x: Math.floor(layoutWidth),
         animated: false,
       });
     }
   };
 
-  private renderCalendarWeekdays = () => {
-    const { styles } = this.props;
+  {
+    /* 스와이프시 함수 */
+  }
 
+  const handleSwipe = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const xValue = Math.floor(e.nativeEvent.contentOffset.x);
+    const maxLayoutFloor = Math.floor(layoutWidth) * 2;
+
+    if (!layoutWidth || layoutWidth === 1) return;
+
+    if (xValue === 0) {
+      if (scrollRef && scrollRef.current) {
+        scrollToMiddle();
+        setCurrentMonth(prevMonth);
+      }
+    } else if (xValue === maxLayoutFloor) {
+      if (scrollRef && scrollRef.current) {
+        scrollToMiddle();
+        setCurrentMonth(nextMonth);
+      }
+    }
+  };
+
+  {
+    /* 날짜 선택시 함수 */
+  }
+
+  const handleSelectedDate = ({ date }: any) => {
+    setSelectedDate(date);
+    onSelectDate && onSelectDate(date);
+  };
+
+  {
+    /* 요일 가져오는 함수 */
+  }
+
+  const renderCalendarWeekdays = () => {
     const weekdays = [];
     for (let idx = 0; idx < 7; idx++) {
       const month = new Date(2020, 5, idx);
@@ -195,208 +177,187 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     );
   };
 
-  private renderCalendar = (displayDate: Date) => {
-    const { styles } = this.props;
-    const year = displayDate.getFullYear();
-    const month = displayDate.getMonth();
+  {
+    /* 3개 캘린더 렌더링 함수(이전달/현재달/다음달) */
+  }
+  const renderCalendars = () => {
+    {
+      /**한달 캘린더 rendering */
+    }
+    const renderCalendar = (displayDate: Date) => {
+      const year = displayDate.getFullYear();
+      const month = displayDate.getMonth();
 
-    const lastDate = new Date(year, month + 1, 0).getDate();
-    const firstWeekday = new Date(year, month, 1).getDay();
-    const lastWeekday = new Date(year, month, lastDate).getDay();
-    const calendarDates = [];
+      const lastDate = new Date(year, month + 1, 0).getDate();
+      const firstWeekday = new Date(year, month, 1).getDay();
+      const lastWeekday = new Date(year, month, lastDate).getDay();
+      const calendarDates = [];
 
-    //get Prev month dates
+      //  이전달 날짜 가져오기
 
-    for (let idx = 0; idx < firstWeekday; idx++) {
-      const date = new Date(year, month, 0);
-      date.setDate(date.getDate() - idx);
-      calendarDates.unshift({ date, isDisabled: true });
+      for (let idx = 0; idx < firstWeekday; idx++) {
+        const date = new Date(year, month, 0);
+        date.setDate(date.getDate() - idx);
+        calendarDates.unshift({ date, isDisabled: true });
+      }
+
+      // 현재달 날짜 가져오기
+
+      for (let idx = 0; idx < lastDate; idx++) {
+        calendarDates.push({
+          date: new Date(year, month, idx + 1),
+        });
+      }
+
+      // 다음달 날짜 가져오기
+
+      for (let idx = 1; idx <= 6 - lastWeekday; idx++) {
+        calendarDates.push({
+          date: new Date(year, month + 1, idx),
+          isDisabled: true,
+        });
+      }
+
+      return (
+        <View>
+          <FlatList
+            numColumns={7}
+            data={calendarDates}
+            keyExtractor={(item, id): string => id.toString()}
+            style={styles && styles.dayContainer}
+            renderItem={renderDate}
+          />
+        </View>
+      );
+    };
+
+    {
+      /* 개별 날짜 렌더링 함수 */
     }
 
-    // get current month dates
+    const renderDate = ({ item }: any) => {
+      const currentYear = item.date.getFullYear();
+      const currentMonth = item.date.getMonth();
+      const currentDate = item.date.getDate();
 
-    for (let idx = 0; idx < lastDate; idx++) {
-      calendarDates.push({
-        date: new Date(year, month, idx + 1),
-      });
-    }
+      const today = new Date();
 
-    //get next month dates
+      const isSelected =
+        selectedDate.getFullYear() === currentYear &&
+        selectedDate.getMonth() === currentMonth &&
+        selectedDate.getDate() === currentDate &&
+        !item.isDisabled;
 
-    for (let idx = 1; idx <= 6 - lastWeekday; idx++) {
-      calendarDates.push({
-        date: new Date(year, month + 1, idx),
-        isDisabled: true,
-      });
-    }
+      const isToday =
+        today.getFullYear() === currentYear &&
+        today.getMonth() === currentMonth &&
+        today.getDate() === currentDate;
 
-    return (
-      <View>
-        <FlatList
-          numColumns={7}
-          data={calendarDates}
-          keyExtractor={(item, id): string => id.toString()}
-          style={styles && styles.dayContainer}
-          renderItem={this.renderDate}
-        />
-      </View>
-    );
-  };
+      const isSunday = item.date.getDay() === 0;
 
-  private renderDate = ({ item }: any) => {
-    const { selectedDate } = this.state;
-    const { styles, childrenDatas, EventDatas } = this.props;
-
-    const year = item.date.getFullYear();
-    const month = item.date.getMonth();
-    const date = item.date.getDate();
-
-    const today = new Date();
-
-    const isSelected =
-      selectedDate.getFullYear() === year &&
-      selectedDate.getMonth() === month &&
-      selectedDate.getDate() === date &&
-      !item.isDisabled;
-
-    const isToday =
-      today.getFullYear() === year &&
-      today.getDate() === date &&
-      today.getMonth() === month;
-
-    const isSunday = item.date.getDay() === 0;
-
-    return (
-      <TouchableOpacity
-        activeOpacity={1}
-        disabled={item.isDisabled}
-        style={[
-          defaultStyles.dateView,
-          styles && styles.dateView,
-          isSelected && [
-            defaultStyles.selectedDate,
-            styles && styles.dateSelected,
-          ],
-        ]}
-        onPress={() => this.handleSelectedDate(item)}
-      >
-        <Text
+      return (
+        <TouchableOpacity
+          activeOpacity={1}
+          disabled={item.isDisabled}
           style={[
-            defaultStyles.dateText,
-            styles.dateText,
-            item.isDisabled && defaultStyles.dateDisabled,
-            isToday && [defaultStyles.dateToday, styles.dateToday],
-            isSunday && styles.dateSunday,
+            defaultStyles.dateView,
+            styles && styles.dateView,
+            isSelected && [
+              defaultStyles.selectedDate,
+              styles && styles.dateSelected,
+            ],
           ]}
+          onPress={() => handleSelectedDate(item)}
         >
-          {item.date.getDate()}
-        </Text>
-        {childrenDatas &&
-          childrenDatas.map(({ date, children }) => {
-            if (date == item.date.getDate()) {
-              return children;
-            }
-          })}
-        {EventDatas &&
-          !item.isDisabled &&
-          EventDatas.map(({ date, children }) => {
-            if (date == item.date.getDate()) {
-              return children;
-            }
-          })}
-        {isSelected && (
-          <View
-            style={{
-              width: "100%",
-              height: "100%",
-              borderWidth: 1,
-              borderColor: "#c59f82",
-              position: "absolute",
-              top: 0,
-              left: 0,
-            }}
-          ></View>
-        )}
-      </TouchableOpacity>
-    );
-  };
+          <Text
+            style={[
+              defaultStyles.dateText,
+              styles.dateText,
+              item.isDisabled && defaultStyles.dateDisabled,
+              isToday && [defaultStyles.dateToday, styles.dateToday],
+              isSunday && styles.dateSunday,
+            ]}
+          >
+            {item.date.getDate()}
+          </Text>
 
-  private renderCalendars = () => {
-    const { date, currentMonth } = this.state;
-    const { styles } = this.props;
+          {/* childrenDatas 있을 경우 ReactElement  렌더링*/}
+          {childrenDatas &&
+            childrenDatas.map(({ date, children }) => {
+              if (
+                date.getFullYear() == currentYear &&
+                date.getMonth() === currentMonth &&
+                date.getDate() == currentDate
+              ) {
+                return children;
+              }
+            })}
 
-    const prevMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() - 1,
-      date.getDate()
-    );
-    const nextMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate()
-    );
+          {/* EventDatas가 있을 경우 ReactElement 렌더링 */}
+          {EventDatas &&
+            EventDatas.map(({ date, children }) => {
+              if (
+                date.getFullYear() == currentYear &&
+                date.getMonth() === currentMonth &&
+                date.getDate() == currentDate
+              ) {
+                return children;
+              }
+            })}
 
+          {/* selected됬을때 ReactElement  렌더링*/}
+
+          {isSelected && renderSelected && renderSelected}
+        </TouchableOpacity>
+      );
+    };
+
+    // 3개 캘린더 rendering(이전달/현재달/다음달)
     return (
       <View
         style={[defaultStyles.monthContainer, styles && styles.monthContainer]}
       >
-        {this.renderCalendar(prevMonth)}
-        {this.renderCalendar(currentMonth)}
-        {this.renderCalendar(nextMonth)}
+        {renderCalendar(prevMonth)}
+        {renderCalendar(currentMonth)}
+        {renderCalendar(nextMonth)}
       </View>
     );
   };
 
-  render() {
-    const { layoutWidth, currentMonth } = this.state;
-    const { styles } = this.props;
+  scrollToMiddle();
 
-    const displayYear = currentMonth.getFullYear();
-    const displayMonth = currentMonth.toLocaleString("default", {
-      month: "long",
-    });
-
-    return (
-      <SafeAreaView
+  return (
+    <SafeAreaView
+      style={[
+        defaultStyles.wrapperContainer,
+        styles && styles.wrapperContainer,
+      ]}
+      onLayout={(e): any => {
+        serLayoutWidth(e.nativeEvent.layout.width);
+        scrollToMiddle();
+      }}
+    >
+      <View
         style={[
-          defaultStyles.wrapperContainer,
-          styles && styles.wrapperContainer,
+          defaultStyles.headerContainer,
+          styles && styles.headerContainer,
         ]}
-        onLayout={(e): any => {
-          this.setState(
-            {
-              layoutWidth: e.nativeEvent.layout.width,
-            },
-            () => {
-              this.scrollToMiddle();
-            }
-          );
-        }}
       >
-        <View
-          style={[
-            defaultStyles.headerContainer,
-            styles && styles.headerContainer,
-          ]}
-        >
-          <Text style={[defaultStyles.headerText, styles && styles.headerText]}>
-            {displayYear} {displayMonth}
-          </Text>
-        </View>
-        {this.renderCalendarWeekdays()}
-        <ScrollView
-          horizontal
-          pagingEnabled
-          ref={this.scrollRef}
-          snapToAlignment="center"
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          contentOffset={{ x: layoutWidth, y: 0 }}
-          onMomentumScrollEnd={this.handleSwipe}
-        >
-          {this.renderCalendars()}
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+        <Text style={[defaultStyles.headerText, styles && styles.headerText]}>
+          {displayYear} {displayMonth}
+        </Text>
+      </View>
+      {renderCalendarWeekdays()}
+      <ScrollView
+        horizontal
+        pagingEnabled
+        ref={scrollRef}
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleSwipe}
+      >
+        {renderCalendars()}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

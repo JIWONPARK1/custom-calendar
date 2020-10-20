@@ -28,19 +28,66 @@
 
 ---
 
-2. ### EventDatas
+2. ### date
+
+   선택된 날짜 (datepicker 여부에 따라 삭제 할수도 있음..)
+
+---
+
+3. ### EventDatas
+
    날짜 텍스트 히단의 이벤트 react element
-   {
-   date : 이벤트 날짜,
-   children : rendering react element
-   }
+
+   ```java
+   EventDatas : {
+
+         date   // 이벤트 날짜 : Date,
+         children : // 이벤트가 있을 경우, rendering할 react element
+
+   }[]
+   ```
 
 ---
 
-3. ### onSelectDate: (date: number) => void
-   날짜 선택시 press event
+4.  ### childrenDatas
+
+    날짜 이외의 rendering 할 react element
+
+    ```java
+    childrenDatas : {
+
+          date   // 해당 날짜 : Date,
+          children : // 해당 날짜의 경우, rendering할 react element
+
+    }[]
+    ```
 
 ---
 
-3. ### onChangeMonth: (month: number) => void
-   달 변경시 event
+5. ### renderSelected : ReactNode
+
+   선택된 날짜에 render 할 ReactNode
+
+   ```java
+   renderSelected :<ReactElement> = <View></View>
+   ```
+
+---
+
+6. ### onSelectDate
+
+   특정 날짜 onPress시
+
+   ```java
+   onSelectDate :  (date: number) => void
+   ```
+
+---
+
+7. ### onChangedDate
+
+   날짜 변경시 event
+
+   ```java
+   onChangeMonth : (date: Date) => void
+   ```

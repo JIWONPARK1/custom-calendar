@@ -1,7 +1,6 @@
 import React, { Component, ReactElement, ReactNode } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import Calendar from "../component/Calendar/Calendar";
-import CalendarCarousel from "../component/CalendarCarousel";
 import { datas } from "./datas";
 
 export default class CalendarScreen extends Component {
@@ -73,15 +72,28 @@ export default class CalendarScreen extends Component {
         left: 0,
         zIndex: -1,
       },
+      selectedView: {
+        width: "100%",
+        height: "103%",
+        borderWidth: 1,
+        borderColor: "#c59f82",
+        position: "absolute",
+        top: 0,
+        marginTop: -2,
+        left: 0,
+      },
     });
 
-    const hasStyles: { date: number; children: ReactNode }[] = [];
-    const hasDates: { date: number; children: ReactNode }[] = [];
+    const hasStyles: {
+      date: Date;
+      children: ReactNode;
+    }[] = [];
+    const hasDates: { date: Date; children: ReactNode }[] = [];
 
     datas.map(({ styleList, date, dateFlag, id }: any) => {
       if (styleList) {
         hasStyles.push({
-          date: new Date(date).getDate(),
+          date: new Date(date),
           children: (
             <Image
               key={id}
@@ -93,21 +105,19 @@ export default class CalendarScreen extends Component {
       }
       if (dateFlag) {
         hasDates.push({
-          date: new Date(date).getDate(),
+          date: new Date(date),
           children: <View key={id} style={styles.hasDate} />,
         });
       }
     });
     return (
-      <>
-        <Calendar
-          styles={styles}
-          selectedDate={new Date()}
-          childrenDatas={hasStyles}
-          EventDatas={hasDates}
-        />
-        <CalendarCarousel />
-      </>
+      <Calendar
+        styles={styles}
+        date={new Date()}
+        childrenDatas={hasStyles}
+        EventDatas={hasDates}
+        renderSelected={<View style={styles.selectedView}></View>}
+      />
     );
   }
 }
