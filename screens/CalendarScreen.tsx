@@ -1,6 +1,7 @@
 import React, { Component, ReactElement, ReactNode } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
 import Calendar from "../component/Calendar/Calendar";
+import CalendarCarousel from "../component/CalendarCarousel";
 import { datas } from "./datas";
 
 export default class CalendarScreen extends Component {
@@ -77,12 +78,13 @@ export default class CalendarScreen extends Component {
     const hasStyles: { date: number; children: ReactNode }[] = [];
     const hasDates: { date: number; children: ReactNode }[] = [];
 
-    datas.map(({ styleList, date, dateFlag }: any) => {
+    datas.map(({ styleList, date, dateFlag, id }: any) => {
       if (styleList) {
         hasStyles.push({
           date: new Date(date).getDate(),
           children: (
             <Image
+              key={id}
               style={{ width: 44, height: 50, marginTop: 3 }}
               source={{ uri: styleList[0].style.attach.filename }}
             />
@@ -92,16 +94,20 @@ export default class CalendarScreen extends Component {
       if (dateFlag) {
         hasDates.push({
           date: new Date(date).getDate(),
-          children: <View style={styles.hasDate} />,
+          children: <View key={id} style={styles.hasDate} />,
         });
       }
     });
     return (
-      <Calendar
-        styles={styles}
-        childrenDatas={hasStyles}
-        EventDatas={hasDates}
-      />
+      <>
+        <Calendar
+          styles={styles}
+          selectedDate={new Date()}
+          childrenDatas={hasStyles}
+          EventDatas={hasDates}
+        />
+        <CalendarCarousel />
+      </>
     );
   }
 }

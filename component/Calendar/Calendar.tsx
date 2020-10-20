@@ -1,4 +1,4 @@
-import React, { Component, ReactElement, ReactNode } from "react";
+import React, { Component, ReactNode } from "react";
 import {
   FlatList,
   ScrollView,
@@ -9,12 +9,52 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   SafeAreaView,
-  Image,
-  Dimensions,
 } from "react-native";
 
+const defaultStyles = StyleSheet.create({
+  wrapperContainer: {
+    width: "100%",
+  },
+  monthContainer: {
+    flexDirection: "row",
+  },
+  headerContainer: {
+    alignItems: "center",
+  },
+  headerText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  weekView: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateView: {
+    width: 47,
+    height: 47,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dateText: {
+    color: "#222",
+  },
+  dateDisabled: {
+    opacity: 0.3,
+  },
+  selectedDate: {
+    borderWidth: 1,
+    borderColor: "#b59073",
+  },
+  selectedDateText: {
+    color: "#b59073",
+  },
+  dateToday: {
+    fontWeight: "bold",
+  },
+});
+
 interface CalendarState {
-  SelectedDate: Date;
+  selectedDate: Date;
   layoutWidth: number;
 
   currentMonth: Date;
@@ -32,6 +72,7 @@ interface CalendarProps {
   childrenDatas?: { date: number; children: ReactNode }[];
 
   //event
+  selectedDate?: Date;
   onSelectDate?: (date: number) => void;
   onChangeMonth?: (date: Date) => void;
 }
@@ -39,69 +80,31 @@ interface CalendarProps {
 export default class Calendar extends Component<CalendarProps, CalendarState> {
   scrollRef: any;
 
-  styles = StyleSheet.create({
-    wrapperContainer: {
-      width: "100%",
-    },
-
-    monthContainer: {
-      flexDirection: "row",
-    },
-
-    headerContainer: {
-      alignItems: "center",
-    },
-
-    headerText: {
-      fontSize: 18,
-      fontWeight: "600",
-    },
-    defaultWeekView: {
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    defaultDateView: {
-      width: 47,
-      height: 47,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    defaultDateText: {
-      color: "#222",
-    },
-    dateDisabled: {
-      opacity: 0.3,
-    },
-    selectedDate: {
-      borderWidth: 1,
-      borderColor: "#b59073",
-    },
-    selectedDateText: {
-      color: "#b59073",
-    },
-    dateToday: {
-      fontWeight: "bold",
-    },
-  });
-
   constructor(props: any) {
     super(props);
     this.state = {
       date: new Date(),
-      SelectedDate: new Date(),
+      selectedDate: new Date(),
       layoutWidth: 0,
       currentMonth: new Date(),
     };
     this.scrollRef = React.createRef();
   }
 
-  componentDidMount = () => {};
+  componentDidMount = () => {
+    const { selectedDate } = this.props;
+    if (selectedDate) {
+      this.setState({
+        selectedDate,
+      });
+    }
+  };
 
   private handleSelectedDate = ({ date }: any) => {
     const { onSelectDate } = this.props;
     this.setState(
       {
-        SelectedDate: date,
+        selectedDate: date,
       },
       () => {
         onSelectDate && onSelectDate(date);
@@ -113,21 +116,18 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     const { layoutWidth, currentMonth } = this.state;
     const { onChangeMonth } = this.props;
 
+    if (!layoutWidth || layoutWidth === 1) return;
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const date = currentMonth.getDate();
+
     const valueX = Math.floor(e.nativeEvent.contentOffset.x);
     const maxLayoutWidth = Math.floor(layoutWidth) * 2;
 
-    const prevMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() - 1,
-      currentMonth.getDate()
-    );
-    const nextMonth = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() + 1,
-      currentMonth.getDate()
-    );
+    const prevMonth = new Date(year, month - 1, date);
+    const nextMonth = new Date(year, month + 1, date);
 
-    if (!layoutWidth || layoutWidth === 1) return;
     if (valueX === 0) {
       this.setState(
         {
@@ -155,6 +155,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     const { layoutWidth } = this.state;
     if (this.scrollRef.current) {
       this.scrollRef.current.scrollTo({
+        duration: 500,
         x: Math.floor(layoutWidth),
         animated: false,
       });
@@ -178,9 +179,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
         style={styles && styles.weekContainer}
         renderItem={({ item, index }: any) => {
           return (
-            <View
-              style={[this.styles.defaultWeekView, styles && styles.weekView]}
-            >
+            <View style={[defaultStyles.weekView, styles && styles.weekView]}>
               <Text
                 style={[
                   styles && styles.weekText,
@@ -196,23 +195,20 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     );
   };
 
-  private renderCalendar = (month: Date) => {
+  private renderCalendar = (displayDate: Date) => {
     const { styles } = this.props;
-    const currentYear = month.getFullYear();
-    const currentMonth = month.getMonth();
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth();
 
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const lastWeekday = new Date(year, month, lastDate).getDay();
     const calendarDates = [];
-
-    const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstWeekday = new Date(currentYear, currentMonth, 1).getDay();
-    const lastWeekday = new Date(currentYear, currentMonth, lastDate).getDay();
 
     //get Prev month dates
 
-    const prevDates = [];
-
     for (let idx = 0; idx < firstWeekday; idx++) {
-      const date = new Date(currentYear, currentMonth - 1, 0);
+      const date = new Date(year, month, 0);
       date.setDate(date.getDate() - idx);
       calendarDates.unshift({ date, isDisabled: true });
     }
@@ -221,7 +217,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
     for (let idx = 0; idx < lastDate; idx++) {
       calendarDates.push({
-        date: new Date(currentYear, currentMonth, idx + 1),
+        date: new Date(year, month, idx + 1),
       });
     }
 
@@ -229,7 +225,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
     for (let idx = 1; idx <= 6 - lastWeekday; idx++) {
       calendarDates.push({
-        date: new Date(currentYear, currentMonth + 1, idx),
+        date: new Date(year, month + 1, idx),
         isDisabled: true,
       });
     }
@@ -248,17 +244,26 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
   };
 
   private renderDate = ({ item }: any) => {
-    const { SelectedDate } = this.state;
+    const { selectedDate } = this.state;
     const { styles, childrenDatas, EventDatas } = this.props;
 
+    const year = item.date.getFullYear();
+    const month = item.date.getMonth();
+    const date = item.date.getDate();
+
+    const today = new Date();
+
     const isSelected =
-      SelectedDate.getDate() === item.date.getDate() &&
-      SelectedDate.getMonth() === item.date.getMonth() &&
+      selectedDate.getFullYear() === year &&
+      selectedDate.getMonth() === month &&
+      selectedDate.getDate() === date &&
       !item.isDisabled;
 
     const isToday =
-      new Date().getDate() === item.date.getDate() &&
-      new Date().getMonth() - 1 === item.date.getMonth();
+      today.getFullYear() === year &&
+      today.getDate() === date &&
+      today.getMonth() === month;
+
     const isSunday = item.date.getDay() === 0;
 
     return (
@@ -266,10 +271,10 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
         activeOpacity={1}
         disabled={item.isDisabled}
         style={[
-          this.styles.defaultDateView,
+          defaultStyles.dateView,
           styles && styles.dateView,
           isSelected && [
-            this.styles.selectedDate,
+            defaultStyles.selectedDate,
             styles && styles.dateSelected,
           ],
         ]}
@@ -277,15 +282,10 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
       >
         <Text
           style={[
-            this.styles.defaultDateText,
+            defaultStyles.dateText,
             styles.dateText,
-            item.isDisabled && this.styles.dateDisabled,
-            isSelected &&
-              this.styles.selectedDateText &&
-              styles &&
-              styles.dateSelected,
-            ,
-            isToday && [this.styles.dateToday, styles.dateToday],
+            item.isDisabled && defaultStyles.dateDisabled,
+            isToday && [defaultStyles.dateToday, styles.dateToday],
             isSunday && styles.dateSunday,
           ]}
         >
@@ -304,6 +304,19 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
               return children;
             }
           })}
+        {isSelected && (
+          <View
+            style={{
+              width: "100%",
+              height: "100%",
+              borderWidth: 1,
+              borderColor: "#c59f82",
+              position: "absolute",
+              top: 0,
+              left: 0,
+            }}
+          ></View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -325,7 +338,7 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
 
     return (
       <View
-        style={[this.styles.monthContainer, styles && styles.monthContainer]}
+        style={[defaultStyles.monthContainer, styles && styles.monthContainer]}
       >
         {this.renderCalendar(prevMonth)}
         {this.renderCalendar(currentMonth)}
@@ -346,23 +359,27 @@ export default class Calendar extends Component<CalendarProps, CalendarState> {
     return (
       <SafeAreaView
         style={[
-          this.styles.wrapperContainer,
+          defaultStyles.wrapperContainer,
           styles && styles.wrapperContainer,
         ]}
         onLayout={(e): any => {
-          this.setState({
-            layoutWidth: e.nativeEvent.layout.width,
-          });
-          this.scrollToMiddle();
+          this.setState(
+            {
+              layoutWidth: e.nativeEvent.layout.width,
+            },
+            () => {
+              this.scrollToMiddle();
+            }
+          );
         }}
       >
         <View
           style={[
-            this.styles.headerContainer,
+            defaultStyles.headerContainer,
             styles && styles.headerContainer,
           ]}
         >
-          <Text style={[this.styles.headerText, styles && styles.headerText]}>
+          <Text style={[defaultStyles.headerText, styles && styles.headerText]}>
             {displayYear} {displayMonth}
           </Text>
         </View>
