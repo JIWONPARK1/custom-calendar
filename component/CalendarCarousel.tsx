@@ -166,7 +166,6 @@ function CalendarCarousel<T>({
   selectDate,
   selectedDate,
   markedDayEvents = [],
-  monthFormatter = new Intl.DateTimeFormat("en", { month: "long" }),
 }: PropsWithChildren<Props<T>>): ReactElement {
   const [layoutWidth, setLayoutWidth] = useState<number>(330);
   const scrollRef = useRef<ScrollView>(null);
@@ -228,7 +227,7 @@ function CalendarCarousel<T>({
 
   const renderCalendars = (): ReactElement => {
     const renderCalendar = (displayDate: Date): ReactElement => {
-      const monthName = monthFormatter.format(displayDate);
+      const monthName = displayDate.getMonth();
       const year = displayDate.getFullYear();
       const month = displayDate.getMonth();
 
@@ -384,9 +383,8 @@ function CalendarCarousel<T>({
 
       const renderEvent = (): ReactElement[] => {
         return markedDayEvents.map(
-          (_markedDayEvent: any, i: string | number | null | undefined) => {
+          (_markedDayEvent: any, i: string | number) => {
             if (
-              i &&
               markedDates[i] === eventDay &&
               markedMonths.includes(month) &&
               markedYears.includes(year)

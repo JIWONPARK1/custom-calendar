@@ -1,6 +1,6 @@
 import React, { Component, ReactElement, ReactNode } from "react";
 import { Dimensions, Image, StyleSheet, View } from "react-native";
-import Calendar from "../component/Calendar/Calendar";
+import CustomCalendar from "../component/CustomCalendar/CustomCalendar";
 import { datas } from "./datas";
 
 export default class CalendarScreen extends Component {
@@ -111,12 +111,12 @@ export default class CalendarScreen extends Component {
       }
     });
     return (
-      <Calendar
+      <CustomCalendar
         styles={styles}
         date={new Date()}
         childrenDatas={hasStyles}
         EventDatas={hasDates}
-        renderSelected={<View style={styles.selectedView}></View>}
+        selectedComponent={<View style={styles.selectedView}></View>}
       />
     );
   }

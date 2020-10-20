@@ -1,4 +1,10 @@
-import React, { ReactNode, PropsWithChildren, useState, useRef } from "react";
+import React, {
+  ReactNode,
+  PropsWithChildren,
+  useState,
+  useRef,
+  ReactElement,
+} from "react";
 import {
   View,
   Text,
@@ -10,6 +16,7 @@ import {
   NativeScrollEvent,
   TouchableOpacity,
 } from "react-native";
+import Calendar from "./Calendar";
 
 const defaultStyles = StyleSheet.create({
   wrapperContainer: {
@@ -53,30 +60,30 @@ const defaultStyles = StyleSheet.create({
   },
 });
 
-interface CalendarProps {
+interface Props {
   //style
   styles?: any;
   date?: Date;
 
   //children
-  renderSelected: ReactNode;
+  selectedComponent: ReactElement;
   EventDatas?: { date: Date; children: ReactNode }[];
   childrenDatas?: { date: Date; children: ReactNode }[];
 
   //event
-  onSelectDate?: (date: number) => void;
+  onSelectDate?: (date: Date) => void;
   onChangedDate?: (date: Date) => void;
 }
 
-export default function Calendar({
+export default function CustomCalendar({
   date = new Date(),
   styles,
   EventDatas,
   childrenDatas,
   onSelectDate,
   onChangedDate,
-  renderSelected,
-}: PropsWithChildren<CalendarProps>) {
+  selectedComponent,
+}: PropsWithChildren<Props>) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [layoutWidth, serLayoutWidth] = useState<number>(0);
   const [currentMonth, setCurrentMonth] = useState<Date>(date);
@@ -122,13 +129,13 @@ export default function Calendar({
 
     if (xValue === 0) {
       if (scrollRef && scrollRef.current) {
-        scrollToMiddle();
         setCurrentMonth(prevMonth);
+        scrollToMiddle();
       }
     } else if (xValue === maxLayoutFloor) {
       if (scrollRef && scrollRef.current) {
-        scrollToMiddle();
         setCurrentMonth(nextMonth);
+        scrollToMiddle();
       }
     }
   };
@@ -137,7 +144,7 @@ export default function Calendar({
     /* 날짜 선택시 함수 */
   }
 
-  const handleSelectedDate = ({ date }: any) => {
+  const handleSelectedDate = (date: Date) => {
     setSelectedDate(date);
     onSelectDate && onSelectDate(date);
   };
@@ -181,145 +188,40 @@ export default function Calendar({
     /* 3개 캘린더 렌더링 함수(이전달/현재달/다음달) */
   }
   const renderCalendars = () => {
-    {
-      /**한달 캘린더 rendering */
-    }
-    const renderCalendar = (displayDate: Date) => {
-      const year = displayDate.getFullYear();
-      const month = displayDate.getMonth();
-
-      const lastDate = new Date(year, month + 1, 0).getDate();
-      const firstWeekday = new Date(year, month, 1).getDay();
-      const lastWeekday = new Date(year, month, lastDate).getDay();
-      const calendarDates = [];
-
-      //  이전달 날짜 가져오기
-
-      for (let idx = 0; idx < firstWeekday; idx++) {
-        const date = new Date(year, month, 0);
-        date.setDate(date.getDate() - idx);
-        calendarDates.unshift({ date, isDisabled: true });
-      }
-
-      // 현재달 날짜 가져오기
-
-      for (let idx = 0; idx < lastDate; idx++) {
-        calendarDates.push({
-          date: new Date(year, month, idx + 1),
-        });
-      }
-
-      // 다음달 날짜 가져오기
-
-      for (let idx = 1; idx <= 6 - lastWeekday; idx++) {
-        calendarDates.push({
-          date: new Date(year, month + 1, idx),
-          isDisabled: true,
-        });
-      }
-
-      return (
-        <View>
-          <FlatList
-            numColumns={7}
-            data={calendarDates}
-            keyExtractor={(item, id): string => id.toString()}
-            style={styles && styles.dayContainer}
-            renderItem={renderDate}
-          />
-        </View>
-      );
-    };
-
-    {
-      /* 개별 날짜 렌더링 함수 */
-    }
-
-    const renderDate = ({ item }: any) => {
-      const currentYear = item.date.getFullYear();
-      const currentMonth = item.date.getMonth();
-      const currentDate = item.date.getDate();
-
-      const today = new Date();
-
-      const isSelected =
-        selectedDate.getFullYear() === currentYear &&
-        selectedDate.getMonth() === currentMonth &&
-        selectedDate.getDate() === currentDate &&
-        !item.isDisabled;
-
-      const isToday =
-        today.getFullYear() === currentYear &&
-        today.getMonth() === currentMonth &&
-        today.getDate() === currentDate;
-
-      const isSunday = item.date.getDay() === 0;
-
-      return (
-        <TouchableOpacity
-          activeOpacity={1}
-          disabled={item.isDisabled}
-          style={[
-            defaultStyles.dateView,
-            styles && styles.dateView,
-            isSelected && [
-              defaultStyles.selectedDate,
-              styles && styles.dateSelected,
-            ],
-          ]}
-          onPress={() => handleSelectedDate(item)}
-        >
-          <Text
-            style={[
-              defaultStyles.dateText,
-              styles.dateText,
-              item.isDisabled && defaultStyles.dateDisabled,
-              isToday && [defaultStyles.dateToday, styles.dateToday],
-              isSunday && styles.dateSunday,
-            ]}
-          >
-            {item.date.getDate()}
-          </Text>
-
-          {/* childrenDatas 있을 경우 ReactElement  렌더링*/}
-          {childrenDatas &&
-            childrenDatas.map(({ date, children }) => {
-              if (
-                date.getFullYear() == currentYear &&
-                date.getMonth() === currentMonth &&
-                date.getDate() == currentDate
-              ) {
-                return children;
-              }
-            })}
-
-          {/* EventDatas가 있을 경우 ReactElement 렌더링 */}
-          {EventDatas &&
-            EventDatas.map(({ date, children }) => {
-              if (
-                date.getFullYear() == currentYear &&
-                date.getMonth() === currentMonth &&
-                date.getDate() == currentDate
-              ) {
-                return children;
-              }
-            })}
-
-          {/* selected됬을때 ReactElement  렌더링*/}
-
-          {isSelected && renderSelected && renderSelected}
-        </TouchableOpacity>
-      );
-    };
-
-    // 3개 캘린더 rendering(이전달/현재달/다음달)
     return (
       <View
         style={[defaultStyles.monthContainer, styles && styles.monthContainer]}
       >
-        {renderCalendar(prevMonth)}
-        {renderCalendar(currentMonth)}
-        {renderCalendar(nextMonth)}
+        <Calendar
+          styles={styles}
+          defaultStyles={defaultStyles}
+          displayDate={prevMonth}
+          selectedDate={selectedDate}
+          EventDatas={EventDatas}
+          childrenDatas={childrenDatas}
+          selectedComponent={selectedComponent}
+          onSelectedDate={handleSelectedDate}
+        />
+        <Calendar
+          styles={styles}
+          defaultStyles={defaultStyles}
+          displayDate={currentMonth}
+          selectedDate={selectedDate}
+          EventDatas={EventDatas}
+          childrenDatas={childrenDatas}
+          selectedComponent={selectedComponent}
+          onSelectedDate={handleSelectedDate}
+        />
+        <Calendar
+          styles={styles}
+          defaultStyles={defaultStyles}
+          displayDate={nextMonth}
+          selectedDate={selectedDate}
+          EventDatas={EventDatas}
+          childrenDatas={childrenDatas}
+          selectedComponent={selectedComponent}
+          onSelectedDate={handleSelectedDate}
+        />
       </View>
     );
   };
