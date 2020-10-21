@@ -1,10 +1,4 @@
-import React, {
-  ReactNode,
-  PropsWithChildren,
-  useState,
-  useRef,
-  ReactElement,
-} from "react";
+import React, { ReactNode, PropsWithChildren, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -17,6 +11,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Calendar from "./Calendar";
+import Day from "./Day";
+import MonthPicker from "react-native-month-year-picker";
 
 const defaultStyles = StyleSheet.create({
   wrapperContainer: {
@@ -27,6 +23,7 @@ const defaultStyles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: "center",
+    flexDirection: "row",
   },
   headerText: {
     fontSize: 18,
@@ -58,6 +55,10 @@ const defaultStyles = StyleSheet.create({
   dateToday: {
     fontWeight: "bold",
   },
+  monthPickerText: {
+    marginLeft: 10,
+    marginTop: 5,
+  },
 });
 
 interface Props {
@@ -65,8 +66,12 @@ interface Props {
   styles?: any;
   date?: Date;
 
+  //monthpicker
+  hasMonthPicker?: boolean;
+  monthPickerIcon?: ReactNode;
+
   //children
-  selectedComponent: ReactElement;
+  selectedComponent: ReactNode;
   EventDatas?: { date: Date; children: ReactNode }[];
   childrenDatas?: { date: Date; children: ReactNode }[];
 
@@ -82,11 +87,14 @@ export default function CustomCalendar({
   childrenDatas,
   onSelectDate,
   onChangedDate,
+  hasMonthPicker,
+  monthPickerIcon,
   selectedComponent,
 }: PropsWithChildren<Props>) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [layoutWidth, serLayoutWidth] = useState<number>(0);
   const [currentMonth, setCurrentMonth] = useState<Date>(date);
+  const [isShowPicker, setIsShowPicker] = useState<boolean>(false);
   const scrollRef = useRef<ScrollView>(null);
   const prevMonth = new Date(
     currentMonth.getFullYear(),
@@ -103,6 +111,7 @@ export default function CustomCalendar({
   const displayMonth = currentMonth.toLocaleString("default", {
     month: "long",
   });
+  const months = [prevMonth, currentMonth, nextMonth];
 
   {
     /* scrollView 가운데 정렬 함수 */
@@ -128,15 +137,14 @@ export default function CustomCalendar({
     if (!layoutWidth || layoutWidth === 1) return;
 
     if (xValue === 0) {
-      if (scrollRef && scrollRef.current) {
-        setCurrentMonth(prevMonth);
-        scrollToMiddle();
-      }
-    } else if (xValue === maxLayoutFloor) {
-      if (scrollRef && scrollRef.current) {
-        setCurrentMonth(nextMonth);
-        scrollToMiddle();
-      }
+      setCurrentMonth(prevMonth);
+      scrollToMiddle();
+      onChangedDate && onChangedDate(prevMonth);
+    }
+    if (xValue === maxLayoutFloor) {
+      setCurrentMonth(nextMonth);
+      scrollToMiddle();
+      onChangedDate && onChangedDate(nextMonth);
     }
   };
 
@@ -149,82 +157,18 @@ export default function CustomCalendar({
     onSelectDate && onSelectDate(date);
   };
 
-  {
-    /* 요일 가져오는 함수 */
-  }
-
-  const renderCalendarWeekdays = () => {
-    const weekdays = [];
-    for (let idx = 0; idx < 7; idx++) {
-      const month = new Date(2020, 5, idx);
-      weekdays.push(month.toLocaleString("default", { weekday: "short" }));
+  const onDateChange = (action: any, date: Date) => {
+    setIsShowPicker(false);
+    if (action !== "dismissedAction") {
+      setCurrentMonth(date);
+      scrollToMiddle();
+      onChangedDate && onChangedDate(date);
     }
-    return (
-      <FlatList
-        scrollEnabled={false}
-        data={weekdays}
-        numColumns={7}
-        keyExtractor={(item, id): string => id.toString()}
-        style={styles && styles.weekContainer}
-        renderItem={({ item, index }: any) => {
-          return (
-            <View style={[defaultStyles.weekView, styles && styles.weekView]}>
-              <Text
-                style={[
-                  styles && styles.weekText,
-                  index === 0 && styles.sundayText,
-                ]}
-              >
-                {item}
-              </Text>
-            </View>
-          );
-        }}
-      />
-    );
   };
 
   {
     /* 3개 캘린더 렌더링 함수(이전달/현재달/다음달) */
   }
-  const renderCalendars = () => {
-    return (
-      <View
-        style={[defaultStyles.monthContainer, styles && styles.monthContainer]}
-      >
-        <Calendar
-          styles={styles}
-          defaultStyles={defaultStyles}
-          displayDate={prevMonth}
-          selectedDate={selectedDate}
-          EventDatas={EventDatas}
-          childrenDatas={childrenDatas}
-          selectedComponent={selectedComponent}
-          onSelectedDate={handleSelectedDate}
-        />
-        <Calendar
-          styles={styles}
-          defaultStyles={defaultStyles}
-          displayDate={currentMonth}
-          selectedDate={selectedDate}
-          EventDatas={EventDatas}
-          childrenDatas={childrenDatas}
-          selectedComponent={selectedComponent}
-          onSelectedDate={handleSelectedDate}
-        />
-        <Calendar
-          styles={styles}
-          defaultStyles={defaultStyles}
-          displayDate={nextMonth}
-          selectedDate={selectedDate}
-          EventDatas={EventDatas}
-          childrenDatas={childrenDatas}
-          selectedComponent={selectedComponent}
-          onSelectedDate={handleSelectedDate}
-        />
-      </View>
-    );
-  };
 
   scrollToMiddle();
 
@@ -236,7 +180,6 @@ export default function CustomCalendar({
       ]}
       onLayout={(e): any => {
         serLayoutWidth(e.nativeEvent.layout.width);
-        scrollToMiddle();
       }}
     >
       <View
@@ -248,18 +191,61 @@ export default function CustomCalendar({
         <Text style={[defaultStyles.headerText, styles && styles.headerText]}>
           {displayYear} {displayMonth}
         </Text>
+        {hasMonthPicker && (
+          <TouchableOpacity
+            onPress={() => {
+              setIsShowPicker(true);
+            }}
+          >
+            {monthPickerIcon ? (
+              monthPickerIcon
+            ) : (
+              <Text style={defaultStyles.monthPickerText}>∨</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
-      {renderCalendarWeekdays()}
+      <Day styles={styles} defaultStyles={defaultStyles} />
       <ScrollView
         horizontal
         pagingEnabled
         ref={scrollRef}
-        scrollEventThrottle={16}
-        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={1}
         onMomentumScrollEnd={handleSwipe}
       >
-        {renderCalendars()}
+        <View
+          style={[
+            defaultStyles.monthContainer,
+            styles && styles.monthContainer,
+          ]}
+        >
+          <FlatList
+            data={months}
+            horizontal
+            keyExtractor={(item, id): string => id.toString()}
+            renderItem={({ item }) => (
+              <Calendar
+                styles={styles}
+                defaultStyles={defaultStyles}
+                displayDate={item}
+                selectedDate={selectedDate}
+                EventDatas={EventDatas}
+                childrenDatas={childrenDatas}
+                selectedComponent={selectedComponent}
+                onSelectedDate={handleSelectedDate}
+              />
+            )}
+          />
+        </View>
       </ScrollView>
+      {isShowPicker && (
+        <MonthPicker
+          value={currentMonth}
+          minimumDate={new Date(1900)}
+          maximumDate={new Date(2100, 5)}
+          onChange={onDateChange}
+        />
+      )}
     </SafeAreaView>
   );
 }

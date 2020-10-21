@@ -112,6 +112,7 @@ export default class CalendarScreen extends Component {
     });
     return (
       <CustomCalendar
+        hasMonthPicker
         styles={styles}
         date={new Date()}
         childrenDatas={hasStyles}

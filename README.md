@@ -36,13 +36,13 @@
 
 3. ### EventDatas
 
-   날짜 텍스트 히단의 이벤트 react element
+   날짜 텍스트 히단의 이벤트 ReactNode
 
    ```java
    EventDatas : {
 
          date   // 이벤트 날짜 : Date,
-         children : // 이벤트가 있을 경우, rendering할 react element
+         children : // 이벤트가 있을 경우, rendering할 ReactNode
 
    }[]
    ```
@@ -51,13 +51,13 @@
 
 4.  ### childrenDatas
 
-    날짜 이외의 rendering 할 react element
+    날짜 이외의 rendering 할 ReactNode
 
     ```java
     childrenDatas : {
 
           date   // 해당 날짜 : Date,
-          children : // 해당 날짜의 경우, rendering할 react element
+          children : // 해당 날짜의 경우, rendering할 ReactNode
 
     }[]
     ```
@@ -69,7 +69,7 @@
    선택된 날짜에 render 할 ReactNode
 
    ```java
-   renderSelected :<ReactElement> = <View></View>
+   renderSelected :<ReactNode> = <View></View>
    ```
 
 ---
@@ -91,3 +91,13 @@
    ```java
    onChangeMonth : (date: Date) => void
    ```
+
+---
+
+7. ### hasMonthPicker : boolean
+   monthpicker 유무
+
+---
+
+7. ### monthPickerIcon : ReactNode
+   monthpicker icon ReactNode

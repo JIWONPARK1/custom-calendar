@@ -33,7 +33,7 @@ export default function Calendar({
   const lastDate = new Date(year, month + 1, 0).getDate();
   const firstWeekday = new Date(year, month, 1).getDay();
   const lastWeekday = new Date(year, month, lastDate).getDay();
-  const calendarDates = [];
+  const calendarDates: { date: Date; isDisabled?: boolean }[] = [];
 
   //  이전달 날짜 가져오기
 
@@ -61,7 +61,7 @@ export default function Calendar({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View>
       <FlatList
         numColumns={7}
         data={calendarDates}
@@ -74,8 +74,8 @@ export default function Calendar({
             EventDatas={EventDatas}
             selectedDate={selectedDate}
             isDisabled={item.isDisabled || false}
-            defaultStyles={defaultStyles}
             childrenDatas={childrenDatas}
+            defaultStyles={defaultStyles}
             onSelectedDate={onSelectedDate}
             selectedComponent={selectedComponent}
           />
