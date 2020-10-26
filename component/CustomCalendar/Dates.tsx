@@ -63,9 +63,10 @@ export default function Dates({
         style={[
           defaultStyles.dateText,
           styles.dateText,
-          isDisabled && defaultStyles.dateDisabled,
           isToday && [defaultStyles.dateToday, styles.dateToday],
           isSunday && styles.dateSunday,
+          isSelected && [styles && styles.dateSelectedText],
+          isDisabled && [defaultStyles.dateDisabled, styles.dateDisabled],
         ]}
       >
         {displayDate.getDate()}

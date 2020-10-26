@@ -10,9 +10,9 @@ export default function Day({
   styles,
   defaultStyles,
 }: PropsWithChildren<Props>) {
-  const weekdays = [];
+  const weekdays: string[] = [];
   for (let idx = 0; idx < 7; idx++) {
-    const month = new Date(2020, 5, idx);
+    const month: Date = new Date(2020, 5, idx);
     weekdays.push(month.toLocaleString("default", { weekday: "short" }));
   }
 
@@ -29,7 +29,7 @@ export default function Day({
             <Text
               style={[
                 styles && styles.weekText,
-                index === 0 && styles.sundayText,
+                index === 0 && styles.weekSunday,
               ]}
             >
               {item}

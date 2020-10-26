@@ -91,7 +91,7 @@ export default function CustomCalendar({
   monthPickerIcon,
   selectedComponent,
 }: PropsWithChildren<Props>) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(date);
   const [layoutWidth, serLayoutWidth] = useState<number>(0);
   const [currentMonth, setCurrentMonth] = useState<Date>(date);
   const [isShowPicker, setIsShowPicker] = useState<boolean>(false);
@@ -107,7 +107,9 @@ export default function CustomCalendar({
     currentMonth.getDate()
   );
 
-  const displayYear = currentMonth.getFullYear();
+  const displayYear = currentMonth.toLocaleString("default", {
+    year: "numeric",
+  });
   const displayMonth = currentMonth.toLocaleString("default", {
     month: "long",
   });
