@@ -1,5 +1,8 @@
 # Custom Calendar
 
+## React Native에서 활용할 수 있는 Custom Calendar Component입니다.
+- 캘린더의 각각의 날짜안에 사용자가 원하는 children을 자유롭게 구성할 수 있습니다.
+
 ## Props
 
 ---
